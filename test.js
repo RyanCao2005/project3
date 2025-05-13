@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async function() {
   };
 
   
-  const container = d3.select("body")
+  const container = d3.select("#visualization-container")
     .append("div")
     .attr("class", "container");
 
@@ -121,19 +121,19 @@ document.addEventListener("DOMContentLoaded", async function() {
 
   const svg = container.append("svg")
     .attr("id", "chart")
-    .attr("width", 800)
-    .attr("height", 500);
+    .attr("width", 1000)
+    .attr("height", 600);
 
 
   const backgroundRect = svg.append("rect")
     .attr("class", "period-background")
-    .attr("width", 800)
-    .attr("height", 500)
+    .attr("width", 1000)
+    .attr("height", 600)
     .attr("fill", LIGHT_PERIOD_COLOR);
 
-const margin = { top: 60, right: 30, bottom: 60, left: 70 },
-      width = 800 - margin.left - margin.right,
-      height = 500 - margin.top - margin.bottom;
+const margin = { top: 60, right: 40, bottom: 60, left: 70 },
+      width = 1000 - margin.left - margin.right,
+      height = 600 - margin.top - margin.bottom;
 
   const chartGroup = svg.append("g")
   .attr("transform", `translate(${margin.left},${margin.top})`);

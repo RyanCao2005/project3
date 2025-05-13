@@ -7,10 +7,50 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="visualization-container">
+    <div id="container"></div>
+    <div id="controls-container"></div>
+    <div id="plot-container"></div>
+  </div>
   
-  <div id="container"></div>
-  <div id="controls-container"></div>
-  <div id="plot-container"></div>
+  <div id="writeup-container" class="writeup">
+    <h2>Rationale for Design Choices</h2>
+    
+    <h3>Visual Encodings</h3>
+    <h4>Encoding 1: Histograms</h4>
+    <p>We chose to use position on a common scale, allowing strong comparisons. Through the magnitude channel, this is the most effective way to display information. Together with the interactive axes changing, the audience can see which way the bars and their values. This means that the viewer can see whether the values of the bar are higher or lower than the previous value. From our previous EDA, we realized that using time series with individual trend lines and even aggregate time series yielded extremely cluttered and unreadable due to the number of mice and also the nature of data(every minute). That's when we realized we could use a histogram with each bar representing individual mice and since the number of mice is relatively low for each dataset it is easy to still see the overall trendline.</p>
+    
+    <h4>Encoding 2: Color</h4>
+    <p>We chose pink and blue for females and males respectively since they are the most commonly associated colors and we decided to implement a dark-to-light mode transition because we wanted the reader to focus on the changes in the temperature distribution made during different circadian cycles(12 hours)</p>
+    
+    <h3>Interactive Design Choices</h3>
+    <h4>Encoding 1: Play Button</h4>
+    <p>We used a play button to display different times to make the different time series readable. The play button on the chart allows viewers to see the natural progression of the temperatures of different mice over different time intervals to show the effects of circadian rhythm and more importantly day and light cycles(circadian rhythm mode). Due to the nature of minute-wise data, we aggregated by the hour for readability.</p>
+    
+    <h4>Encoding 2: Different Time Settings</h4>
+    <p>We used different methods to represent the different cycles that mice go through: circadian rhythm (12-hour cycles), to see how mice change their temperature throughout the circadian cycle. We aggregated by the hour for the first 24 hours (hour by hour mode) since the data was originally minute-wise and didn't matter in our context of circadian rhythms analysis. We also have a day-by-day mode showing the temperature of mice over the course of days since the data spans 2 weeks. We wanted to include this in case readers wanted to see how ovulation cycles affect the temperature of mice.</p>
+    
+    <h4>Encoding 3: Point in Time</h4>
+    <p>The ability to select a specific time allows viewers to see and build their own trends relative to the mean. This improves interpretability by allowing the viewer to isolate a point. As a result, they are able to find their trends and can potentially gleam more granular information from the specific period.</p>
+    
+    <h4>Encoding 4: Dataset Button</h4>
+    <p>We decided to add options to look at strictly male or female datasets for the different time intervals and decided to include a combined option to allow easier comparison of trends across gender groups.</p>
+    
+    <h4>Encoding 5: Average Line</h4>
+    <p>In case readers wanted to see the overall trend we still computed the aggregate mean of the dataset for each time interval and respective group displayed to show how each individual mouse compares to the average.</p>
+    
+    <h3>Group Contributions</h3>
+    <ul>
+      <li><strong>Jonathan Yepez</strong> - Handled implementation of gender coloring among datasets and dataset drop-down menu animations, implemented initial histograms for datasets</li>
+      <li><strong>Surya Setty</strong> - Handled CSS styling and implementation, exploratory data analysis, and dataset processing.</li>
+      <li><strong>Suchit Bhayani</strong> - handled write-up documentation and light/dark mode transitions for circadian cycles.</li>
+      <li><strong>Ryan Cao</strong> - implemented time mode button animations and logic. Implemented play button animation for time series.</li>
+    </ul>
+    
+    <h3>Development Process</h3>
+    <p>We chose the mouse dataset as we found it interesting how time and circadian cycles affect the temperature of mice, as included in the dataset. We did EDA by constructing an initial time series with each line representing a mouse and found a lack of readability due to the large number of minute and hour values that could be computed. After trying aggregate time series, this problem persisted, leading us toward histograms. As circadian cycles depend on light, we decided to use a light-to-dark mode transition and vice versa to illustrate the circadian cycles of the data. Our hardest issue in the transition-making process was finding the right timing for font color changes in light-day intervals. We proposed an initial line over the bars to indicate the overall distribution shape, though found that it was distracting from the other encodings leading us to use an average line instead. In total, we spent 30 people hours with many hours spent fixing circadian cycle transitions and implementing optimal time intervals alongside the average line.</p>
+  </div>
+
   <script src="test.js"></script>
 </body>
 </html>

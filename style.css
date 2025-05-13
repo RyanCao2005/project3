@@ -1,6 +1,13 @@
 /* Main container styles */
+#visualization-container {
+    width: 100%;
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+}
+
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
     font-family: Arial, sans-serif;
@@ -80,6 +87,7 @@ label {
     border: 1px solid #ddd;
     border-radius: 4px;
     background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Dark mode styles with slower transitions */
@@ -129,4 +137,80 @@ label {
 .light-mode .legend text,
 .light-mode .average-line {
     transition: all 1.5s ease;
+}
+
+/* Write-up section styles */
+.writeup {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px 40px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+}
+
+.writeup h2 {
+    color: #2c3e50;
+    font-size: 28px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.writeup h3 {
+    color: #34495e;
+    font-size: 24px;
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+
+.writeup h4 {
+    color: #2980b9;
+    font-size: 20px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.writeup p {
+    color: #444;
+    margin-bottom: 15px;
+    text-align: justify;
+}
+
+.writeup ul {
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.writeup li {
+    margin-bottom: 10px;
+    color: #444;
+}
+
+.writeup strong {
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+/* Dark mode support for write-up */
+.dark-mode .writeup {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+}
+
+.dark-mode .writeup h2,
+.dark-mode .writeup h3,
+.dark-mode .writeup h4 {
+    color: #3498db;
+}
+
+.dark-mode .writeup p,
+.dark-mode .writeup li {
+    color: #ecf0f1;
+}
+
+.dark-mode .writeup strong {
+    color: #3498db;
 }
