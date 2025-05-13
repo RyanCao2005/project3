@@ -29,12 +29,13 @@ document.addEventListener("DOMContentLoaded", async function() {
     circadian: {
       name: "Circadian Rhythm (12h Light/Dark)",
       interval: 12,
-      maxHours: 168, 
-      filter: (hour) => true,
+      maxHours: 168, // 7 days * 24 hours
+      filter: (hour) => hour <= 168, // Ensure we don't go beyond 7 days
       getDisplayText: (hour) => {
         const period = hour % 24 < 12 ? "Light" : "Dark";
         const day = Math.floor(hour / 24) + 1;
-        return `Day ${day} - ${period} Period (Hour ${hour % 24})`;
+        const cycleNum = Math.floor(hour / 12) + 1;
+        return `Day ${day} - ${period} Period (Cycle ${cycleNum})`;
       }
     },
     daily: {
@@ -163,10 +164,24 @@ let currentData = [];
 
   function updateHourOptions() {
     const modeConfig = TIME_MODES[currentTimeMode];
-    const hours = Array.from(
-      { length: Math.floor(modeConfig.maxHours / modeConfig.interval) },
-      (_, i) => i * modeConfig.interval
-    ).filter(hour => modeConfig.filter(hour));
+    let hours;
+    
+    if (currentTimeMode === 'circadian') {
+      // Generate hours for each 12-hour period (0, 12, 24, 36, 48, 60, 72, 84, ..., 156, 168)
+      hours = Array.from(
+        { length: Math.floor(modeConfig.maxHours / 12) + 1 },
+        (_, i) => i * 12
+      );
+    } else {
+      // For normal and daily modes, use the original calculation
+      hours = Array.from(
+        { length: Math.floor(modeConfig.maxHours / modeConfig.interval) },
+        (_, i) => i * modeConfig.interval
+      );
+    }
+
+    // Filter hours based on mode config
+    hours = hours.filter(hour => modeConfig.filter(hour));
 
     hourSelect.selectAll("option").remove();
     hourSelect.selectAll("option")
@@ -222,64 +237,43 @@ let currentData = [];
 
       
       timeModeSelect.on("change", async function() {
-        const oldTimeMode = currentTimeMode;
-        const oldHour = +hourSelect.property("value");
         currentTimeMode = this.value;
         
-        // removes elements from chart when time mode changes
-        await new Promise(resolve => {
-          chartGroup.selectAll(".bar, .female-bar, .male-bar, .single-bar, .title, .x-axis-label, .y-axis-label, .average-line, .legend")
-            .transition()
-            .duration(150)
-            .style("opacity", 0)
-            .remove()
-            .on("end", resolve);
-        });
+        // Clear existing chart elements
+        chartGroup.selectAll(".bar, .female-bar, .male-bar, .single-bar, .title, .x-axis-label, .y-axis-label, .average-line, .legend")
+          .transition()
+          .duration(200)
+          .style("opacity", 0)
+          .remove();
 
         // Clear axes
         xAxis.selectAll("*").remove();
         yAxis.selectAll("*").remove();
         
+        // Get current hour before updating options
+        const oldHour = +hourSelect.property("value");
         
-        let newHour;
-        const oldConfig = TIME_MODES[oldTimeMode];
-        const newConfig = TIME_MODES[currentTimeMode];
+        // Update hour options for new time mode
+        const newHours = updateHourOptions();
         
-        if (oldTimeMode === "normal" && currentTimeMode === "circadian") {
-          newHour = Math.floor(oldHour / 12) * 12;
-        } else if (oldTimeMode === "normal" && currentTimeMode === "daily") {
-          newHour = Math.floor(oldHour / 24) * 24;
-        } else if (oldTimeMode === "circadian" && currentTimeMode === "normal") {
-          newHour = oldHour;
-        } else if (oldTimeMode === "circadian" && currentTimeMode === "daily") {
-          newHour = Math.floor(oldHour / 24) * 24;
-        } else if (oldTimeMode === "daily" && currentTimeMode === "normal") {
-          newHour = oldHour;
-        } else if (oldTimeMode === "daily" && currentTimeMode === "circadian") {
-          newHour = Math.floor(oldHour / 12) * 12;
-        } else {
-          newHour = oldHour;
-        }
-
-       
-        updateHourOptions();
+        // Calculate equivalent hour in new mode
+        const modeConfig = TIME_MODES[currentTimeMode];
+        const equivalentHour = Math.floor(oldHour / modeConfig.interval) * modeConfig.interval;
         
-        
+        // Set the hour select to the equivalent hour if it exists, otherwise use first hour
+        const validHours = Array.from(hourSelect.node().options).map(opt => +opt.value);
+        const newHour = validHours.includes(equivalentHour) ? equivalentHour : validHours[0];
         hourSelect.property("value", newHour);
-        currentHourIndex = Math.floor(newHour / newConfig.interval);
         
+        // Update the chart with the new hour
+        await updateChart(newHour);
         
+        // Reset play state
         if (isPlaying) {
           clearInterval(interval);
           isPlaying = false;
           playButton.text("Play");
         }
-
-        
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        
-        await updateChart(newHour);
       });
 
       
@@ -293,7 +287,7 @@ let currentData = [];
           .style("opacity", 0)
           .remove();
 
-        
+        // reset axes
         xAxis.selectAll("*").remove();
         yAxis.selectAll("*").remove();
         
@@ -392,13 +386,6 @@ let currentData = [];
 
   async function updateChart(hour) {
     try {
-      
-      chartGroup.selectAll(".bar, .female-bar, .male-bar, .single-bar")
-        .transition()
-        .duration(200)
-        .style("opacity", 0)
-        .remove();
-
       const modeConfig = TIME_MODES[currentTimeMode];
       const hourInDay = hour % 24;
       const isDarkPeriod = hourInDay >= 12;
@@ -407,50 +394,79 @@ let currentData = [];
 
       const textColor = isDarkPeriod ? "white" : "black";
 
+      // Calculate the time window for aggregation based on mode
+      let startHour, endHour;
+      switch(currentTimeMode) {
+        case 'normal':
+          startHour = hour;
+          endHour = hour + 1;
+          break;
+        case 'circadian':
+          startHour = Math.floor(hour / 12) * 12;
+          endHour = startHour + 12;
+          break;
+        case 'daily':
+          startHour = Math.floor(hour / 24) * 24;
+          endHour = startHour + 24;
+          break;
+      }
+
+      // Filter and aggregate data based on time window
+      const filtered = currentData.filter(d => d.Hour >= startHour && d.Hour < endHour);
       
-      const colorTransition = d3.transition()
-        .duration(100)
-        .ease(d3.easeLinear);
-
-     
-      const dataTransition = d3.transition()
-        .duration(800)
-        .ease(d3.easeLinear);
-
-
-  const filtered = currentData.filter(d => d.Hour === hour);
+      // Calculate average temperature for each mouse over the time window
       const groupedData = d3.group(filtered, d => d.MouseID);
       const processedData = Array.from(groupedData, ([key, values]) => {
         if (currentDataset === "combined") {
-          const female = values.find(d => d.Gender === 'female') || { Temperature: 0 };
-          const male = values.find(d => d.Gender === 'male') || { Temperature: 0 };
+          const femaleValues = values.filter(d => d.Gender === 'female');
+          const maleValues = values.filter(d => d.Gender === 'male');
           return {
             MouseID: key,
-            female: female.Temperature,
-            male: male.Temperature
+            female: femaleValues.length > 0 ? d3.mean(femaleValues, d => d.Temperature) : 0,
+            male: maleValues.length > 0 ? d3.mean(maleValues, d => d.Temperature) : 0
           };
         } else {
           return {
             MouseID: key,
-            Temperature: values[0].Temperature,
+            Temperature: d3.mean(values, d => d.Temperature),
             Gender: values[0].Gender
           };
         }
       });
 
+      // Rest of the existing updateChart code...
+      const colorTransition = d3.transition()
+        .duration(100)
+        .ease(d3.easeLinear);
+
+      const dataTransition = d3.transition()
+        .duration(800)
+        .ease(d3.easeLinear);
+
+      // Update scales with aggregated data
+      x.domain(processedData.map(d => d.MouseID));
       
+      // Update y-scale domain based on aggregated data
+      if (currentDataset === "combined") {
+        const maxTemp = d3.max(processedData, d => Math.max(d.female || 0, d.male || 0));
+        y.domain([35, maxTemp + 0.5]);
+      } else {
+        const maxTemp = d3.max(processedData, d => d.Temperature);
+        y.domain([35, maxTemp + 0.5]);
+      }
+
+      // Calculate average for the legend
       let averageValue;
       if (currentDataset === "combined") {
-        averageValue = d3.mean(processedData, d => d.female + d.male);
+        const allTemps = processedData.flatMap(d => [d.female, d.male].filter(temp => temp > 0));
+        averageValue = d3.mean(allTemps);
       } else {
         averageValue = d3.mean(processedData, d => d.Temperature);
       }
 
-      
-      x.domain(processedData.map(d => d.MouseID));
-  y.domain([35, d3.max(filtered, d => d.Temperature) + 0.5]);
+      // Rest of the existing updateChart function...
 
-     
+      
       const updateAxisColors = (selection, transition) => {
         selection.selectAll(".tick text")
           .transition(transition)
@@ -572,7 +588,7 @@ let currentData = [];
     .style("font-size", "18px")
     .style("font-weight", "bold")
         .text(currentDataset === "combined" ? 
-          "Mice in Motion: How does mice temperature change throughout the circadian time?" :
+          "Mice in Motion: Male vs Female Temperature Comparison" :
           `Mice in Motion: ${currentDataset.charAt(0).toUpperCase() + currentDataset.slice(1)} Temperature Data`)
         .transition(colorTransition)
         .style("fill", textColor);
