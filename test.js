@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     circadian: {
       name: "Circadian Rhythm (12h Light/Dark)",
       interval: 12,
-      maxHours: 168, // First week
+      maxHours: 168, 
       filter: (hour) => true,
       getDisplayText: (hour) => {
         const period = hour % 24 < 12 ? "Light" : "Dark";
@@ -222,22 +222,51 @@ let currentData = [];
 
       
       timeModeSelect.on("change", async function() {
+        const oldTimeMode = currentTimeMode;
+        const oldHour = +hourSelect.property("value");
         currentTimeMode = this.value;
         
-        
-        chartGroup.selectAll(".bar, .female-bar, .male-bar, .single-bar, .title, .x-axis-label, .y-axis-label, .average-line, .legend")
-          .transition()
-          .duration(200)
-          .style("opacity", 0)
-          .remove();
+        // removes elements from chart when time mode changes
+        await new Promise(resolve => {
+          chartGroup.selectAll(".bar, .female-bar, .male-bar, .single-bar, .title, .x-axis-label, .y-axis-label, .average-line, .legend")
+            .transition()
+            .duration(150)
+            .style("opacity", 0)
+            .remove()
+            .on("end", resolve);
+        });
 
-        
+        // Clear axes
         xAxis.selectAll("*").remove();
         yAxis.selectAll("*").remove();
         
-        const newHour = updateHourOptions();
-        currentHourIndex = 0;
-        await updateChart(newHour);
+        
+        let newHour;
+        const oldConfig = TIME_MODES[oldTimeMode];
+        const newConfig = TIME_MODES[currentTimeMode];
+        
+        if (oldTimeMode === "normal" && currentTimeMode === "circadian") {
+          newHour = Math.floor(oldHour / 12) * 12;
+        } else if (oldTimeMode === "normal" && currentTimeMode === "daily") {
+          newHour = Math.floor(oldHour / 24) * 24;
+        } else if (oldTimeMode === "circadian" && currentTimeMode === "normal") {
+          newHour = oldHour;
+        } else if (oldTimeMode === "circadian" && currentTimeMode === "daily") {
+          newHour = Math.floor(oldHour / 24) * 24;
+        } else if (oldTimeMode === "daily" && currentTimeMode === "normal") {
+          newHour = oldHour;
+        } else if (oldTimeMode === "daily" && currentTimeMode === "circadian") {
+          newHour = Math.floor(oldHour / 12) * 12;
+        } else {
+          newHour = oldHour;
+        }
+
+       
+        updateHourOptions();
+        
+        
+        hourSelect.property("value", newHour);
+        currentHourIndex = Math.floor(newHour / newConfig.interval);
         
         
         if (isPlaying) {
@@ -245,6 +274,12 @@ let currentData = [];
           isPlaying = false;
           playButton.text("Play");
         }
+
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        
+        await updateChart(newHour);
       });
 
       
@@ -258,7 +293,7 @@ let currentData = [];
           .style("opacity", 0)
           .remove();
 
-        // reset axes
+        
         xAxis.selectAll("*").remove();
         yAxis.selectAll("*").remove();
         
@@ -357,6 +392,13 @@ let currentData = [];
 
   async function updateChart(hour) {
     try {
+      
+      chartGroup.selectAll(".bar, .female-bar, .male-bar, .single-bar")
+        .transition()
+        .duration(200)
+        .style("opacity", 0)
+        .remove();
+
       const modeConfig = TIME_MODES[currentTimeMode];
       const hourInDay = hour % 24;
       const isDarkPeriod = hourInDay >= 12;
@@ -530,7 +572,7 @@ let currentData = [];
     .style("font-size", "18px")
     .style("font-weight", "bold")
         .text(currentDataset === "combined" ? 
-          "Mice in Motion: Male vs Female Temperature Comparison" :
+          "Mice in Motion: How does mice temperature change throughout the circadian time?" :
           `Mice in Motion: ${currentDataset.charAt(0).toUpperCase() + currentDataset.slice(1)} Temperature Data`)
         .transition(colorTransition)
         .style("fill", textColor);
