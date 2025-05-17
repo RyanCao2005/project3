@@ -586,11 +586,11 @@ let currentData = [];
     .attr("text-anchor", "middle")
     .style("font-size", "18px")
     .style("font-weight", "bold")
-        .text(currentDataset === "combined" ? 
-          "Mice in Motion: Male vs Female Temperature Comparison" :
-          `Mice in Motion: ${currentDataset.charAt(0).toUpperCase() + currentDataset.slice(1)} Temperature Data`)
-        .transition(colorTransition)
-        .style("fill", textColor);
+    .text(currentDataset === "combined" ? 
+      "Mice in Motion: How has mice temperature changed across time and gender?" :
+      `Mice in Motion: ${currentDataset.charAt(0).toUpperCase() + currentDataset.slice(1)} Temperature Data`)
+    .transition(colorTransition)
+    .style("fill", textColor);
 
       if (isBoundaryTransition) {
         const t1 = d3.transition()
